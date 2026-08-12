@@ -1,7 +1,50 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { proxyImages } from "../config.ts";
 import { errorFields, log } from "../logger.ts";
 import { openai } from "../openai.ts";
+
+const DOWNLOAD_TIMEOUT_MS = 30_000;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+
+async function fetchImageAsDataUrl(imageUrl: string): Promise<string> {
+  const startedAt = performance.now();
+  const response = await fetch(imageUrl, {
+    signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to download image: HTTP ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const contentType = response.headers.get("content-type");
+  if (!contentType || !contentType.startsWith("image/")) {
+    throw new Error(
+      `Unsupported content type for image download: ${contentType ?? "missing"}`,
+    );
+  }
+
+  const bytes = new Uint8Array(await response.arrayBuffer());
+
+  if (bytes.byteLength > MAX_IMAGE_BYTES) {
+    throw new Error(
+      `Image too large: ${bytes.byteLength} bytes exceeds limit of ${MAX_IMAGE_BYTES}`,
+    );
+  }
+
+  const base64 = Buffer.from(bytes).toString("base64");
+
+  log("info", "image downloaded", {
+    imageUrl,
+    contentType,
+    sizeBytes: bytes.byteLength,
+    durationMs: Math.round(performance.now() - startedAt),
+  });
+
+  return `data:${contentType};base64,${base64}`;
+}
 
 export function registerAnalyzeImage(server: McpServer) {
   server.registerTool(
@@ -25,7 +68,7 @@ answering arbitrary questions about what the image shows.
         prompt: z
           .string()
           .describe(
-            "The question or instruction about the image, e.g. \"What color is the car?\" or \"Extract all visible text.\"",
+            'The question or instruction about the image, e.g. "What color is the car?" or "Extract all visible text."',
           ),
         imageUrl: z
           .string()
@@ -44,6 +87,10 @@ answering arbitrary questions about what the image shows.
       const startedAt = performance.now();
 
       try {
+        const image = proxyImages
+          ? await fetchImageAsDataUrl(imageUrl)
+          : imageUrl;
+
         const response = await openai.responses.create({
           model: "gpt-5.6",
           input: [
@@ -53,7 +100,7 @@ answering arbitrary questions about what the image shows.
                 { type: "input_text", text: prompt },
                 {
                   type: "input_image",
-                  image_url: imageUrl,
+                  image_url: image,
                   detail: "auto",
                 },
               ],

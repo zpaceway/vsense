@@ -22,6 +22,7 @@ Configuration comes from environment variables, optionally loaded from a
 | `VSENSE_PORT`         | `32516`                  | Port the HTTP server binds.                           |
 | `VSENSE_MCP_HOST`     | `0.0.0.0`                | Interface the HTTP server binds.                      |
 | `VSENSE_MCP_BASE_URL` | `http://localhost:32516` | Public base URL used by deployments.                  |
+| `VSENSE_PROXY_IMAGES` | `true`                  | Download images server-side and send them to OpenAI as base64 so private URLs work. Set to `false` to pass the URL through to OpenAI directly. |
 
 The server refuses to start without `VSENSE_API_KEY`. The Makefile and
 Compose default to the committed development key (`f18df8...`); override it
@@ -108,8 +109,9 @@ no `mcp-session-id` handling is required.
 }
 ```
 
-The `imageUrl` is passed directly to OpenAI; it must be a URL OpenAI can
-reach (not `localhost`).
+By default the server downloads the image itself and sends it to OpenAI as
+base64 (so private URLs work); the `imageUrl` is only passed directly to
+OpenAI when `VSENSE_PROXY_IMAGES=false`.
 
 ## Logging
 

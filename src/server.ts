@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { apiKey, HOST, MCP_PATH, PORT } from "./config.ts";
+import { apiKey, HOST, MCP_PATH, PORT, proxyImages } from "./config.ts";
 import { errorFields, log } from "./logger.ts";
 import { registerTools } from "./tools/index.ts";
 
@@ -72,6 +72,7 @@ export async function startServer() {
     rawPort: process.env.VSENSE_PORT,
     mcpPath: MCP_PATH,
     apiKeyConfigured: apiKey.length > 0,
+    proxyImages,
   });
 
   const httpServer = createServer(async (req, res) => {

@@ -21,3 +21,9 @@ export const HOST = process.env.VSENSE_MCP_HOST ?? "0.0.0.0";
 export const MCP_PATH = "/mcp";
 
 export const apiKey = process.env.VSENSE_API_KEY;
+
+// Internal: download images server-side and send them to OpenAI as base64 so
+// private URLs work. Clients are not aware of this. Set to "false" to pass
+// the URL through to OpenAI directly.
+export const proxyImages =
+  (process.env.VSENSE_PROXY_IMAGES ?? "true") !== "false";

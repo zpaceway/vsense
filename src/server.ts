@@ -6,6 +6,34 @@ import { apiKey, HOST, MCP_PATH, PORT } from "./config.ts";
 import { errorFields, log } from "./logger.ts";
 import { registerTools } from "./tools/index.ts";
 
+const SERVER_INSTRUCTIONS = `# vsense MCP server
+
+vsense is a vision analysis MCP server. It lets you ask questions about images
+using a multimodal model (OpenAI), without handling image data locally.
+
+## What you can do
+
+- Analyze any publicly accessible image by URL: describe contents, detect
+  objects, read text (OCR), or answer arbitrary questions about what is
+  visible in the image.
+
+## How to use
+
+1. Get an image URL the user (or another tool) provided, or that is publicly
+   reachable. The image must be hosted somewhere the model can fetch it —
+   private/local files or localhost URLs are not supported.
+2. Call the \`analyze_image\` tool with:
+   - \`imageUrl\`: the URL of the image to analyze.
+   - \`prompt\`: the question or instruction about the image.
+3. The tool returns the model's answer as text.
+
+## Notes
+
+- The model runs remotely; nothing is stored server-side.
+- Prefer specific prompts (e.g. "What color is the car in this photo?") over
+  vague ones ("What do you see?") for better results.
+`;
+
 function logRequest(req: IncomingMessage, res: ServerResponse) {
   const startedAt = performance.now();
 
@@ -20,10 +48,13 @@ function logRequest(req: IncomingMessage, res: ServerResponse) {
 }
 
 export function createMcpServer() {
-  const mcpServer = new McpServer({
-    name: "vsense",
-    version: "1.0.0",
-  });
+  const mcpServer = new McpServer(
+    {
+      name: "vsense",
+      version: "1.0.0",
+    },
+    { instructions: SERVER_INSTRUCTIONS },
+  );
 
   registerTools(mcpServer);
 

@@ -7,10 +7,32 @@ export function registerAnalyzeImage(server: McpServer) {
   server.registerTool(
     "analyze_image",
     {
-      description: "Analyze an image based on a prompt",
+      description: `Analyze an image by URL using a multimodal model.
+
+**What it does**: Sends the image at \`imageUrl\` together with your \`prompt\`
+to a vision-capable model (OpenAI) and returns the model's answer as text.
+
+**Use cases**: describing image contents, object/scene detection, OCR/text
+extraction, checking visual details (colors, layout, signs, people), or
+answering arbitrary questions about what the image shows.
+
+**Notes**:
+- The image must be publicly fetchable over HTTP(S); local file paths and
+  private/localhost URLs cannot be accessed by the model.
+- The prompt can be a question or an instruction; be specific for best results.
+- This is a remote inference call and may take a few seconds to complete.`,
       inputSchema: {
-        prompt: z.string().describe("Question about the image"),
-        imageUrl: z.string().url().describe("URL of the image to analyze"),
+        prompt: z
+          .string()
+          .describe(
+            "The question or instruction about the image, e.g. \"What color is the car?\" or \"Extract all visible text.\"",
+          ),
+        imageUrl: z
+          .string()
+          .url()
+          .describe(
+            "Publicly accessible HTTP(S) URL of the image to analyze. Must be reachable by the remote model; localhost or private URLs will fail.",
+          ),
       },
     },
     async ({ prompt, imageUrl }) => {

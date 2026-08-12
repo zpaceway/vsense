@@ -1,12 +1,14 @@
 # VSense MCP
 
 VSense is a minimal Model Context Protocol server built with Bun that exposes
-an image-analysis tool backed by OpenAI. The MCP endpoint is protected by a
-shared API key; the health endpoint is public.
+image- and video-analysis tools backed by OpenAI. The MCP endpoint is protected
+by a shared API key; the health endpoint is public.
 
 ## Requirements
 
 - [Bun](https://bun.sh/) 1.x or newer
+- [ffmpeg](https://ffmpeg.org/) (including `ffprobe`), required by
+  `analyze_video` for frame extraction
 - An OpenAI API key
 - Docker with Compose, only when using the container workflow
 
@@ -17,12 +19,13 @@ Configuration comes from environment variables, optionally loaded from a
 
 | Variable              | Default                  | Purpose                                               |
 | --------------------- | ------------------------ | ----------------------------------------------------- |
-| `OPENAI_API_KEY`      | —                        | OpenAI API key used by `analyze_image` (required).    |
+| `OPENAI_API_KEY`      | —                        | OpenAI API key used by `analyze_image` and `analyze_video` (required). |
 | `VSENSE_API_KEY`      | —                        | Bearer token required on the MCP endpoint (required). |
 | `VSENSE_PORT`         | `32516`                  | Port the HTTP server binds.                           |
 | `VSENSE_MCP_HOST`     | `0.0.0.0`                | Interface the HTTP server binds.                      |
 | `VSENSE_MCP_BASE_URL` | `http://localhost:32516` | Public base URL used by deployments.                  |
 | `VSENSE_PROXY_IMAGES` | `true`                  | Download images server-side and send them to OpenAI as base64 so private URLs work. Set to `false` to pass the URL through to OpenAI directly. |
+| `VSENSE_VIDEO_MODEL`  | `gpt-5-mini`            | Cheap vision model used by `analyze_video` to keep frame-heavy analysis affordable. |
 
 The server refuses to start without `VSENSE_API_KEY`. The Makefile and
 Compose default to the committed development key (`f18df8...`); override it
@@ -113,13 +116,44 @@ By default the server downloads the image itself and sends it to OpenAI as
 base64 (so private URLs work); the `imageUrl` is only passed directly to
 OpenAI when `VSENSE_PROXY_IMAGES=false`.
 
+`analyze_video` analyzes a video based on a prompt. OpenAI's API has no native
+video input, so the server downloads the video, samples frames across its
+duration with ffmpeg, and sends them to a cheap vision model (`gpt-5-mini` by
+default, override with `VSENSE_VIDEO_MODEL`) in chronological order at low
+image detail:
+
+```json
+{
+  "prompt": "What happens in this video?",
+  "videoUrl": "https://example.com/clip.mp4"
+}
+```
+
+By default the server samples one frame every 5 seconds, capped at 100 frames.
+Pass `maxFrames` to distribute an exact number of frames evenly across the
+video (max 100):
+
+```json
+{
+  "prompt": "What happens in this video?",
+  "videoUrl": "https://example.com/clip.mp4",
+  "maxFrames": 60
+}
+```
+
+Videos are limited to 5 minutes and 512 MB. Only the visuals are analyzed; the
+audio track is not transcribed. Videos are always downloaded server-side for
+frame extraction. For fine visual detail, prefer `analyze_image` on a single
+frame.
+
 ## Logging
 
 All logs are structured JSON lines on stdout/stderr (`ts`, `level`, `msg`,
 plus fields). The server logs startup configuration, every HTTP request
 (method, URL, status, duration), authorization failures, MCP request errors,
-and graceful shutdown. The `analyze_image` tool logs each call, its duration,
-and failures.
+and graceful shutdown. The `analyze_image` and `analyze_video` tools log each
+call (including video downloads and frame extraction), their durations, and
+failures.
 
 ## Security
 

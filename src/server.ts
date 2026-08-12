@@ -9,29 +9,39 @@ import { registerTools } from "./tools/index.ts";
 const SERVER_INSTRUCTIONS = `# vsense MCP server
 
 vsense is a vision analysis MCP server. It lets you ask questions about images
-using a multimodal model (OpenAI), without handling image data locally.
+and videos using multimodal models (OpenAI), without handling the media
+locally.
 
 ## What you can do
 
 - Analyze any publicly accessible image by URL: describe contents, detect
   objects, read text (OCR), or answer arbitrary questions about what is
   visible in the image.
+- Analyze any publicly accessible video by URL (up to 5 minutes): the server
+  extracts frames with ffmpeg and sends them to a cheap vision model.
 
 ## How to use
 
-1. Get an image URL the user (or another tool) provided, or that is publicly
-   reachable. The image must be hosted somewhere the model can fetch it —
-   private/local files or localhost URLs are not supported.
-2. Call the \`analyze_image\` tool with:
+1. Get an image or video URL the user (or another tool) provided, or that is
+   publicly reachable. The media must be hosted somewhere the model can fetch
+   it — private/local files or localhost URLs are not supported.
+2. For images, call the \`analyze_image\` tool with:
    - \`imageUrl\`: the URL of the image to analyze.
    - \`prompt\`: the question or instruction about the image.
-3. The tool returns the model's answer as text.
+3. For videos, call the \`analyze_video\` tool with:
+   - \`videoUrl\`: the URL of the video to analyze (max 5 minutes).
+   - \`prompt\`: the question or instruction about the video.
+   - \`maxFrames\` (optional): frames distributed evenly across the video
+     (max 100). When omitted, one frame is sampled every 5 seconds.
+4. The tool returns the model's answer as text.
 
 ## Notes
 
 - The model runs remotely; nothing is stored server-side.
 - Prefer specific prompts (e.g. "What color is the car in this photo?") over
   vague ones ("What do you see?") for better results.
+- Video frames are sent at low detail to keep cost down; for fine visual
+  detail prefer \`analyze_image\` on a single frame.
 `;
 
 function logRequest(req: IncomingMessage, res: ServerResponse) {

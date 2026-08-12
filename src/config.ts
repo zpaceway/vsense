@@ -27,3 +27,7 @@ export const apiKey = process.env.VSENSE_API_KEY;
 // the URL through to OpenAI directly.
 export const proxyImages =
   (process.env.VSENSE_PROXY_IMAGES ?? "true") !== "false";
+
+// Model used by analyze_video. A cheaper vision model keeps frame-heavy video
+// analysis affordable; the default is gpt-5-mini.
+export const videoModel = process.env.VSENSE_VIDEO_MODEL ?? "gpt-5-mini";

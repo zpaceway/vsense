@@ -1,0 +1,14 @@
+name: vsense-mcp
+
+services:
+  vsense-mcp:
+    image: vsense-mcp:latest
+    container_name: vsense-mcp
+    build: .
+    network_mode: host
+    environment:
+      VSENSE_MCP_HOST: ${VSENSE_MCP_HOST:-0.0.0.0}
+      VSENSE_PORT: ${VSENSE_PORT:-32516}
+      VSENSE_API_KEY: ${VSENSE_API_KEY:-f18df8637d0240b7a2aba2ea4dba93d5}
+      VSENSE_MCP_BASE_URL: ${VSENSE_MCP_BASE_URL:-http://localhost:32516}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}

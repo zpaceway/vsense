@@ -44,4 +44,4 @@ build-push:
 deploy:
 	@echo "Deploying to Kubernetes..."
 	$(MAKE) build-push
-	kubectl rollout restart deployment/vsense-mcp --namespace=vsense-mcp
+	kubectl rollout restart deployment/vsense --namespace=vsense

@@ -38,6 +38,7 @@ export async function startServer() {
   log("info", "vsense mcp starting", {
     host: HOST,
     port: PORT,
+    rawPort: process.env.VSENSE_PORT,
     mcpPath: MCP_PATH,
     apiKeyConfigured: apiKey.length > 0,
   });
